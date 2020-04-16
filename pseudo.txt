@@ -1,0 +1,38 @@
+﻿pg_server   <--- слушает на каком то порту
+kafka_server <--- слушает на каком то порту
+
+//Pseudo code with pseudo classes, just for start to understand logic, not so much deeper in
+
+main() {
+
+     SparkClient sparkClient = new SparkClient();
+
+     PGClient pgClient = new PGClient("localhost:5432");
+	// слать алерты
+     KafkaClient kafkaClient = new KafkaClient("localhost:port");
+
+
+     PCapNetworkInterface pcapInterface = PCap4j.connect("ipv4"); //maybe other ip's
+     
+
+     pcapInterface.addListener(new MyPackageListener() {
+           @Override
+           void onPackageReceived(Package pkg) {
+                sparkClient.send(pkg.size);
+           }
+     });
+
+     sparkClient.submit(5, MINUTES, new MyAggregator() {
+         void aggregate(List<Integer> packageSizes) {
+              int sum = sum(packageSizes());
+              
+              int limit = pgClient.exec("select limit from my_table")
+              
+              if (sum > limit) {
+
+//sample of create a topic ~ > bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic alerts
+                   kafkaClient.send("alerts", "Traffic exceeds limit: " + sum);
+              }
+         }
+     });
+}
